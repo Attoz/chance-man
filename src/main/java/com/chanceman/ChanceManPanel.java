@@ -525,13 +525,15 @@ public class ChanceManPanel extends PluginPanel
             for (Integer id : rolledItemsManager.getRolledItems())
             {
                 ItemComposition comp = itemManager.getItemComposition(id);
-                if (comp != null)
+                String sanitizedName = sanitizeItemName(comp != null ? comp.getName() : null);
+                if (sanitizedName == null)
                 {
-                    String name = comp.getName().toLowerCase();
-                    if (searchText.isEmpty() || name.contains(searchText))
-                    {
-                        filteredRolled.add(id);
-                    }
+                    continue;
+                }
+                String lowerName = sanitizedName.toLowerCase();
+                if (searchText.isEmpty() || lowerName.contains(searchText))
+                {
+                    filteredRolled.add(id);
                 }
             }
 
@@ -541,13 +543,15 @@ public class ChanceManPanel extends PluginPanel
             for (Integer id : unlockedItemsManager.getUnlockedItems())
             {
                 ItemComposition comp = itemManager.getItemComposition(id);
-                if (comp != null)
+                String sanitizedName = sanitizeItemName(comp != null ? comp.getName() : null);
+                if (sanitizedName == null)
                 {
-                    String name = comp.getName().toLowerCase();
-                    if (searchText.isEmpty() || name.contains(searchText))
-                    {
-                        filteredUnlocked.add(id);
-                    }
+                    continue;
+                }
+                String lowerName = sanitizedName.toLowerCase();
+                if (searchText.isEmpty() || lowerName.contains(searchText))
+                {
+                    filteredUnlocked.add(id);
                 }
             }
 
@@ -619,8 +623,26 @@ public class ChanceManPanel extends PluginPanel
     {
         clientThread.invokeLater(() -> {
             ItemComposition comp = itemManager.getItemComposition(itemId);
-            String name = (comp != null) ? comp.getName() : "Unknown";
-            SwingUtilities.invokeLater(() -> callback.accept(name));
+            String name = sanitizeItemName(comp != null ? comp.getName() : null);
+            SwingUtilities.invokeLater(() -> callback.accept(name != null ? name : "Unknown"));
         });
+    }
+
+    private String sanitizeItemName(String rawName)
+    {
+        if (rawName == null)
+        {
+            return null;
+        }
+        String trimmed = rawName.trim();
+        if (trimmed.isEmpty()
+                || trimmed.equalsIgnoreCase("null")
+                || trimmed.equalsIgnoreCase("Members")
+                || trimmed.equalsIgnoreCase("(Members)")
+                || trimmed.matches("(?i)null\\s*\\(Members\\)"))
+        {
+            return null;
+        }
+        return trimmed;
     }
 }

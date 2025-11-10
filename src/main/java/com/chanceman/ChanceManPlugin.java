@@ -474,7 +474,16 @@ public class ChanceManPlugin extends Plugin
             return false;
         }
         String name = comp.getName();
-        if (name == null || name.trim().isEmpty() || name.equalsIgnoreCase("null"))
+        if (name == null)
+        {
+            return false;
+        }
+        name = name.trim();
+        if (name.isEmpty()
+                || name.equalsIgnoreCase("null")
+                || name.equalsIgnoreCase("Members")
+                || name.equalsIgnoreCase("(Members)")
+                || name.matches("(?i)null\\s*\\(Members\\)"))
         {
             return false;
         }

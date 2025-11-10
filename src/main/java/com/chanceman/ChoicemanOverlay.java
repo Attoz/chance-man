@@ -61,6 +61,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
     private static final int ICON_COUNT = 3;
     private static final int DRAW_COUNT = ICON_COUNT + 1;
     private static final int COLUMN_SPACING = 16;
+    private static final int VISIBLE_ROLLING_ITEM_COUNT = 3;
 
     private final Client client;
     private final ItemManager itemManager;
@@ -343,9 +344,17 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         final int slotWidth = selectionMode
                 ? Math.max(Math.round(baseSlotWidth * slotScale), 180)
                 : baseSlotWidth;
-        final int slotHeight = selectionMode
-                ? Math.max(Math.round(baseSlotHeight * slotScale), 120)
-                : baseSlotHeight;
+        final int slotHeight;
+        final int rollingVisibleItems = Math.max(2, VISIBLE_ROLLING_ITEM_COUNT);
+        if (selectionMode)
+        {
+            slotHeight = Math.max(Math.round(baseSlotHeight * slotScale), 120);
+        }
+        else
+        {
+            final int rollingContentHeight = (int)(ICON_H + (rollingVisibleItems - 1) * STEP);
+            slotHeight = rollingContentHeight + SLOT_PADDING_Y * 2;
+        }
         final int spacing = Math.max(14, Math.round(COLUMN_SPACING * slotScale));
         final int totalWidth = columnCount * slotWidth + (columnCount - 1) * spacing;
         final int slotsLeftX = centerX - ( totalWidth / 2 ) + (selectionMode ? 0 : BOX_SHIFT_X);
@@ -369,7 +378,16 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
             iconPadX = SLOT_PADDING_X;
             iconPadY = SLOT_PADDING_Y;
         }
-        final float contentCenterY = slotTopY + iconPadY + ICON_H / 2f;
+        final float contentCenterY;
+        if (selectionMode)
+        {
+            contentCenterY = slotTopY + iconPadY + ICON_H / 2f;
+        }
+        else
+        {
+            final int rollingContentHeight = slotHeight - iconPadY * 2;
+            contentCenterY = slotTopY + iconPadY + rollingContentHeight / 2f;
+        }
         final float iconsTopYF = contentCenterY - middleIndex * STEP - ICON_H / 2f;
         final int[] columnXs = new int[columnCount];
         for (int col = 0; col < columnCount; col++)
@@ -786,7 +804,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
             return "";
         }
         name = name.trim();
-        if (name.isEmpty() || name.equalsIgnoreCase("Members") || name.matches("(?i)null\\s*\\(Members\\)"))
+        if (name.isEmpty() || name.equalsIgnoreCase("null") || name.equalsIgnoreCase("Members") || name.equalsIgnoreCase("(Members)") || name.matches("(?i)null\\s*\\(Members\\)"))
         {
             return "";
         }

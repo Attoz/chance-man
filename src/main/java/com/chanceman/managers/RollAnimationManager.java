@@ -241,7 +241,7 @@ public class RollAnimationManager
             return "";
         }
         name = name.trim();
-        if (name.isEmpty() || name.equalsIgnoreCase("Members"))
+        if (name.isEmpty() || name.equalsIgnoreCase("Members") || name.matches("(?i)null\\s*\\(Members\\)"))
         {
             return "";
         }

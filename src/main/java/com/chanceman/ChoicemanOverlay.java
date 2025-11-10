@@ -203,7 +203,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         this.currentSpeed = INITIAL_SPEED;
         this.randomLockedItemSupplier = randomLockedItemSupplier;
         this.isAnimating = true;
-        this.lastUpdateNanos = 0L;
+        this.lastUpdateNanos = System.nanoTime();
 
         this.isSnapping = false;
         this.snapStartMs = 0L;
@@ -330,12 +330,10 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         {
             columnXs[col] = slotsLeftX + col * (slotWidth + spacing);
         }
-        final float[] columnOffsets = new float[columnCount];
         for (int col = 0; col < columnCount; col++)
         {
             if (selectionMode)
             {
-                columnOffsets[col] = 0f;
                 continue;
             }
             float adjust = columnOffsetAdjust[col];
@@ -361,7 +359,6 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                 }
             }
             columnOffsetAdjust[col] = adjust;
-            columnOffsets[col] = rollOffset + adjust;
         }
         final int centerIndex = ICON_COUNT / 2;
         final int innerBoxXInset = FRAME_CONTENT_INSET;
@@ -501,7 +498,8 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                         final BufferedImage image = itemManager.getImage(itemId, 1, false);
                         if (image == null) continue;
 
-                        final float drawYF = iconsTopYF + i * STEP - rollOffset;
+                        final float columnOffset = rollOffset + columnOffsetAdjust[col];
+                        final float drawYF = iconsTopYF + i * STEP - columnOffset;
                         final int drawY = Math.round(drawYF);
 
                         if (!selectionMode && iconFrameImage != null) {
@@ -525,7 +523,8 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                         }
 
                         final int centerItemId = column.get(winnerIndex);
-                        final float columnBaseF = iconsTopYF + centerIndex * STEP - columnOffsets[col];
+                        final float columnOffset = rollOffset + columnOffsetAdjust[col];
+                        final float columnBaseF = iconsTopYF + centerIndex * STEP - columnOffset;
                         final int columnBaseY = Math.round(columnBaseF);
                         drawHighlight(g, columnXs[col] + iconPadX, columnBaseY, centerItemId, iconSize, false);
                         drawItemLabel(

@@ -196,15 +196,20 @@ public class ChanceManPanel extends PluginPanel
         rolledScroll.setPreferredSize(new Dimension(250, 300));
         JPanel rolledContainer = createTitledPanel("Rolled Items", rolledScroll);
 
+        // Use a custom cell renderer that can handle long text
         unlockedList.setCellRenderer(new ItemCellRenderer());
-        unlockedList.setVisibleRowCount(10);
         unlockedList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        unlockedList.setLayoutOrientation(JList.VERTICAL);
+        unlockedList.setVisibleRowCount(-1);
+        
+        // Create a scroll pane with horizontal scrolling enabled
         JScrollPane unlockedScroll = new JScrollPane(
-                unlockedList,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            unlockedList,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
         );
-        unlockedScroll.setPreferredSize(new Dimension(250, 300));
+        unlockedScroll.setPreferredSize(new Dimension(250, 300)); // Set a reasonable default size
+        unlockedScroll.setWheelScrollingEnabled(true);
         JPanel unlockedContainer = createTitledPanel("Unlocked Items", unlockedScroll);
 
         centerCardPanel.add(rolledContainer, "ROLLED");
@@ -252,6 +257,8 @@ public class ChanceManPanel extends PluginPanel
     {
         private final JLabel iconLabel = new JLabel();
         private final JLabel nameLabel = new JLabel();
+        private final int PREFERRED_WIDTH = 200; // Width for the cell
+        private final int PREFERRED_HEIGHT = 32; // Height for each row
 
         public ItemCellRenderer()
         {
@@ -260,6 +267,9 @@ public class ChanceManPanel extends PluginPanel
             add(iconLabel, BorderLayout.WEST);
             add(nameLabel, BorderLayout.CENTER);
             nameLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            // Let the cell be as wide as needed, but with a minimum width
+            setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
+            setMaximumSize(new Dimension(Short.MAX_VALUE, PREFERRED_HEIGHT));
         }
 
         @Override
@@ -339,8 +349,13 @@ public class ChanceManPanel extends PluginPanel
         titled.setTitleColor(new Color(200, 200, 200));
         container.setBorder(new CompoundBorder(titled, empty));
 
-        // Directly add the passed-in component (which may itself be a JScrollPane)
-        container.add(content, BorderLayout.CENTER);
+        // Wrap content in a panel with FlowLayout to prevent horizontal stretching
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setOpaque(false);
+        contentWrapper.add(content, BorderLayout.CENTER);
+        
+        // Add the wrapper to the container
+        container.add(contentWrapper, BorderLayout.CENTER);
         return container;
     }
 

@@ -517,7 +517,9 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                         );
 
                         if (clickableSelection && col < currentOptions.size()) {
-                            Rectangle rect = new Rectangle(columnXs[col], slotTopY, slotWidth, slotHeight);
+                            final int iconX = columnXs[col] + iconPadX;
+                            final int iconY = columnBaseY;
+                            Rectangle rect = new Rectangle(iconX, iconY, iconSize, iconSize);
                             synchronized (columnHitboxes) {
                                 columnHitboxes.add(rect);
                             }
@@ -599,10 +601,8 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         g.setStroke(oldStroke);
     }
 
-    private void drawItemLabel(Graphics2D g, int slotX, int slotY, int slotWidth, int slotHeight, String text, boolean allowWrap)
-    {
-        if (text == null || text.isEmpty())
-        {
+    private void drawItemLabel(Graphics2D g, int slotX, int slotY, int slotWidth, int slotHeight, String text, boolean allowWrap) {
+        if (text == null || text.isEmpty()) {
             return;
         }
         Font oldFont = g.getFont();
@@ -610,13 +610,41 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         FontMetrics fm = g.getFontMetrics();
         int maxWidth = slotWidth - 14;
         int maxLines = allowWrap ? 2 : 1;
-        List<String> lines = wrapLabelText(text, maxWidth, fm, maxLines);
+        
+        List<String> lines = new ArrayList<>();
+        if (fm.stringWidth(text) <= maxWidth || !allowWrap) {
+            // If text fits in one line or wrapping is disabled, just add the whole text
+            lines.add(text);
+        } else {
+            // Try to wrap the text normally
+            String[] words = text.split("\\s+");
+            StringBuilder currentLine = new StringBuilder();
+            
+            for (String word : words) {
+                String testLine = currentLine.length() == 0 ? word : currentLine.toString() + " " + word;
+                if (fm.stringWidth(testLine) <= maxWidth) {
+                    currentLine = new StringBuilder(testLine);
+                } else {
+                    if (currentLine.length() > 0) {
+                        lines.add(currentLine.toString());
+                        currentLine = new StringBuilder(word);
+                        if (lines.size() >= maxLines) {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (currentLine.length() > 0 && lines.size() < maxLines) {
+                lines.add(currentLine.toString());
+            }
+        }
+
         int lineHeight = fm.getAscent();
         int totalHeight = lineHeight * lines.size();
         int startY = slotY + slotHeight - 8 - totalHeight + lineHeight;
         int currentY = startY;
-        for (String line : lines)
-        {
+        
+        for (String line : lines) {
             int textWidth = fm.stringWidth(line);
             int textX = slotX + (slotWidth - textWidth) / 2;
             g.setColor(Color.BLACK);
@@ -628,84 +656,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         g.setFont(oldFont);
     }
 
-    private List<String> wrapLabelText(String text, int maxWidth, FontMetrics fm, int maxLines)
-    {
-        List<String> lines = new ArrayList<>();
-        if (text == null || text.isEmpty())
-        {
-            return lines;
-        }
-        String remaining = text.trim();
-        while (!remaining.isEmpty() && lines.size() < maxLines)
-        {
-            String line = fitLine(remaining, maxWidth, fm);
-            if (line.isEmpty())
-            {
-                break;
-            }
-            lines.add(line);
-            if (remaining.length() <= line.length())
-            {
-                remaining = "";
-            }
-            else
-            {
-                remaining = remaining.substring(line.length()).trim();
-            }
-        }
-        if (!remaining.isEmpty() && !lines.isEmpty())
-        {
-            int lastIdx = lines.size() - 1;
-            lines.set(lastIdx, trimWithEllipsis(lines.get(lastIdx), maxWidth, fm));
-        }
-        return lines;
-    }
-
-    private String fitLine(String text, int maxWidth, FontMetrics fm)
-    {
-        if (fm.stringWidth(text) <= maxWidth)
-        {
-            return text;
-        }
-        String[] words = text.split("\\s+");
-        StringBuilder builder = new StringBuilder();
-        for (String word : words)
-        {
-            String candidate = builder.length() == 0 ? word : builder + " " + word;
-            if (fm.stringWidth(candidate) <= maxWidth)
-            {
-                builder.setLength(0);
-                builder.append(candidate);
-            }
-            else
-            {
-                if (builder.length() == 0)
-                {
-                    return trimWithEllipsis(word, maxWidth, fm);
-                }
-                break;
-            }
-        }
-        return builder.toString();
-    }
-
-    private String trimWithEllipsis(String text, int maxWidth, FontMetrics fm)
-    {
-        String ellipsis = "...";
-        int ellipsisWidth = fm.stringWidth(ellipsis);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < text.length(); i++)
-        {
-            char ch = text.charAt(i);
-            sb.append(ch);
-            if (fm.stringWidth(sb.toString()) + ellipsisWidth > maxWidth)
-            {
-                sb.deleteCharAt(sb.length() - 1);
-                break;
-            }
-        }
-        return sb.toString() + ellipsis;
-    }
+    // Old text wrapping and truncation methods have been removed
 
     private String getItemNameSafe(int itemId)
     {

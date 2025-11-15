@@ -53,7 +53,8 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
     private static final float CHOICE_SLOT_SCALE = 1.0f;
     private static final int MIN_CHOICE_SLOT_WIDTH = 110;
     private static final int MIN_CHOICE_SLOT_HEIGHT = 80;
-    private static final int MIN_SCROLL_SLOT_WIDTH = 90;
+    // Keep scroll slots as wide as the eventual choice buttons so icon centers align.
+    private static final int MIN_SCROLL_SLOT_WIDTH = MIN_CHOICE_SLOT_WIDTH;
     private static final int SCROLL_ICON_TARGET = 48;
     private static final int SCROLL_ICON_TARGET_COMPACT = 36;
     private static final int SCROLL_ITEM_GAP = 6;
@@ -71,7 +72,8 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
 
     private static final int ICON_COUNT = 3;
     private static final int DRAW_COUNT = ICON_COUNT + 1;
-    private static final int COLUMN_SPACING = 8;
+    // Ensure scroll frames mirror the spacing seen in the final choice buttons.
+    private static final int COLUMN_SPACING = 24;
     private static final int VISIBLE_ROLLING_ITEM_COUNT = 3;
     private static final int CHOICE_BUTTON_CORNER_RADIUS = 12;
     private static final int CHOICE_BUTTON_INSET = 6;
@@ -81,7 +83,6 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
     private static final Color CHOICE_BUTTON_BORDER_HOVER = new Color(255, 220, 140, 245);
     private static final Color CHOICE_BUTTON_BORDER_INNER = new Color(30, 30, 30, 210);
     private static final Color CHOICE_BUTTON_SHADOW = new Color(0, 0, 0, 90);
-    private static final Color CHOICE_BUTTON_HIGHLIGHT = new Color(255, 255, 255, 140);
 
     private final Client client;
     private final ItemManager itemManager;
@@ -697,35 +698,6 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         g.setPaint(paint);
         g.fill(buttonShape);
 
-        // glossy highlight on upper half for some depth
-        GradientPaint highlightPaint = new GradientPaint(
-                rect.x,
-                rect.y,
-                CHOICE_BUTTON_HIGHLIGHT,
-                rect.x,
-                rect.y + rect.height / 2f,
-                new Color(
-                        CHOICE_BUTTON_HIGHLIGHT.getRed(),
-                        CHOICE_BUTTON_HIGHLIGHT.getGreen(),
-                        CHOICE_BUTTON_HIGHLIGHT.getBlue(),
-                        0
-                )
-        );
-        RoundRectangle2D.Float highlightShape = new RoundRectangle2D.Float(
-                rect.x + 3,
-                rect.y + 3,
-                rect.width - 6,
-                Math.max(4f, rect.height / 2f),
-                Math.max(4f, cornerRadius - 4f),
-                Math.max(4f, cornerRadius - 4f)
-        );
-        g.setComposite(AlphaComposite.SrcOver.derive(0.45f));
-        g.setPaint(highlightPaint);
-        g.fill(highlightShape);
-
-        g.setComposite(previousComposite);
-        g.setPaint(previousPaint);
-
         g.setColor(hovered ? CHOICE_BUTTON_BORDER_HOVER : CHOICE_BUTTON_BORDER);
         g.setStroke(new BasicStroke(hovered ? 3f : 2f));
         g.draw(buttonShape);
@@ -756,8 +728,6 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         {
             g.drawImage(icon, iconX, iconY, iconSize, iconSize, null);
         }
-
-        applyIconSheen(g, iconRect, hovered);
 
     }
 
@@ -813,34 +783,6 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                 cy - radius,
                 radius * 2f,
                 radius * 2f
-        ));
-        g.setComposite(oldComposite);
-    }
-
-    private void applyIconSheen(Graphics2D g, Rectangle iconRect, boolean hovered)
-    {
-        final float cx = iconRect.x + iconRect.width / 2f;
-        final float cy = iconRect.y + iconRect.height * 0.2f;
-        final float width = iconRect.width * 1.3f;
-        final float height = iconRect.height * 0.9f;
-        RadialGradientPaint sheen = new RadialGradientPaint(
-                new Point2D.Float(cx, cy),
-                Math.max(width, height) * 0.5f,
-                new float[]{0f, 0.85f, 1f},
-                new Color[]{
-                        new Color(255, 255, 255, hovered ? 170 : 130),
-                        new Color(255, 255, 255, hovered ? 40 : 25),
-                        new Color(255, 255, 255, 0)
-                }
-        );
-        Composite oldComposite = g.getComposite();
-        g.setComposite(AlphaComposite.SrcOver.derive(0.6f));
-        g.setPaint(sheen);
-        g.fill(new Ellipse2D.Float(
-                cx - width / 2f,
-                cy - height / 2f,
-                width,
-                height
         ));
         g.setComposite(oldComposite);
     }

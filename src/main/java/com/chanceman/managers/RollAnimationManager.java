@@ -43,7 +43,8 @@ public class RollAnimationManager
     @Inject private ChanceManConfig config;
     @Setter private ChanceManPanel chanceManPanel;
 
-    @Setter private HashSet<Integer> allTradeableItems;
+    private HashSet<Integer> allTradeableItems;
+    private volatile Set<Integer> strictlyTradeableItems = Collections.emptySet();
     private final Queue<Integer> rollQueue = new ConcurrentLinkedQueue<>();
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private volatile boolean isRolling = false;
@@ -54,6 +55,27 @@ public class RollAnimationManager
     @Getter
     @Setter
     private volatile boolean manualRoll = false;
+
+    public synchronized void setAllTradeableItems(HashSet<Integer> allTradeableItems)
+    {
+        this.allTradeableItems = allTradeableItems;
+        if (allTradeableItems == null || allTradeableItems.isEmpty())
+        {
+            strictlyTradeableItems = Collections.emptySet();
+            return;
+        }
+
+        HashSet<Integer> tradeableOnly = new HashSet<>();
+        for (int id : allTradeableItems)
+        {
+            ItemComposition comp = itemManager.getItemComposition(id);
+            if (comp != null && comp.isTradeable())
+            {
+                tradeableOnly.add(id);
+            }
+        }
+        strictlyTradeableItems = tradeableOnly;
+    }
 
     /**
      * Enqueues an item ID for the roll animation.
@@ -266,10 +288,12 @@ public class RollAnimationManager
     {
         int target = Math.max(2, Math.min(5, config.choicemanOptionCount()));
         LinkedHashSet<Integer> options = new LinkedHashSet<>();
+        boolean hasTradeableOption = isTradeableItem(guaranteedItemId);
         if (guaranteedItemId != 0)
         {
             options.add(guaranteedItemId);
         }
+
         int attemptsLeft = Math.max(target * 3, allTradeableItems != null ? allTradeableItems.size() : target * 3);
         while (options.size() < target && attemptsLeft-- > 0)
         {
@@ -279,8 +303,73 @@ public class RollAnimationManager
                 break;
             }
             options.add(candidate);
+            if (isTradeableItem(candidate))
+            {
+                hasTradeableOption = true;
+            }
         }
+
+        if (!hasTradeableOption)
+        {
+            int failsafe = getRandomTradeableItem();
+            if (failsafe != 0 && !options.contains(failsafe))
+            {
+                if (options.size() >= target)
+                {
+                    Iterator<Integer> iterator = options.iterator();
+                    boolean removed = false;
+                    while (iterator.hasNext())
+                    {
+                        int itemId = iterator.next();
+                        if (!isTradeableItem(itemId))
+                        {
+                            iterator.remove();
+                            removed = true;
+                            break;
+                        }
+                    }
+                    if (!removed)
+                    {
+                        Iterator<Integer> fallbackIterator = options.iterator();
+                        if (fallbackIterator.hasNext())
+                        {
+                            fallbackIterator.next();
+                            fallbackIterator.remove();
+                        }
+                    }
+                }
+                if (options.size() < target)
+                {
+                    options.add(failsafe);
+                    hasTradeableOption = true;
+                }
+            }
+        }
+
         return new ArrayList<>(options);
+    }
+
+    private boolean isTradeableItem(int itemId)
+    {
+        return itemId != 0 && strictlyTradeableItems.contains(itemId);
+    }
+
+    private int getRandomTradeableItem()
+    {
+        if (strictlyTradeableItems == null || strictlyTradeableItems.isEmpty())
+        {
+            return 0;
+        }
+        int index = random.nextInt(strictlyTradeableItems.size());
+        int i = 0;
+        for (int id : strictlyTradeableItems)
+        {
+            if (i++ == index)
+            {
+                return id;
+            }
+        }
+        return strictlyTradeableItems.iterator().next();
     }
 
     private int waitForChoicemanSelection(List<Integer> options, int fallbackItemId)

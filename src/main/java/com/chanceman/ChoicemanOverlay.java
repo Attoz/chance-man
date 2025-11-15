@@ -60,6 +60,12 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
     private static final Color SLOT_FILL_TOP = new Color(22, 22, 22, 235);
     private static final Color SLOT_FILL_BOTTOM = new Color(10, 10, 10, 235);
     private static final Font LABEL_FONT = new Font("SansSerif", Font.BOLD, 11);
+    private static final Color TRADEABLE_GLOW_INNER = new Color(255, 255, 160, 150);
+    private static final Color TRADEABLE_GLOW_OUTER = new Color(255, 255, 160, 0);
+    private static final Color UNTRADEABLE_GLOW_INNER = new Color(140, 210, 255, 160);
+    private static final Color UNTRADEABLE_GLOW_OUTER = new Color(140, 210, 255, 0);
+    private static final Color[] TRADEABLE_GLOW = new Color[]{TRADEABLE_GLOW_INNER, TRADEABLE_GLOW_OUTER};
+    private static final Color[] UNTRADEABLE_GLOW = new Color[]{UNTRADEABLE_GLOW_INNER, UNTRADEABLE_GLOW_OUTER};
 
     private static final int ICON_COUNT = 3;
     private static final int DRAW_COUNT = ICON_COUNT + 1;
@@ -673,13 +679,14 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         final float cx = iconsX + iconDimension / 2f;
         final float cy = baseY + iconDimension / 2f;
 
+        final Color[] glowPalette = getHighlightPalette(itemId);
         final RadialGradientPaint glow = new RadialGradientPaint(
                 new Point2D.Float(cx, cy),
                 glowH / 2f,
                 new float[]{0f, 1f},
                 new Color[]{
-                        new Color(255, 255, 160, 150),
-                        new Color(255, 255, 160, 0)
+                        glowPalette[0],
+                        glowPalette[1]
                 }
         );
         final Composite old = g.getComposite();
@@ -706,5 +713,20 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         if (centerImg != null) {
             g.drawImage(centerImg, scaledX, scaledY, scaledW, scaledH, null);
         }
+    }
+
+    private Color[] getHighlightPalette(int itemId)
+    {
+        return isTradeableItem(itemId) ? TRADEABLE_GLOW : UNTRADEABLE_GLOW;
+    }
+
+    private boolean isTradeableItem(int itemId)
+    {
+        if (itemId <= 0)
+        {
+            return true;
+        }
+        ItemComposition composition = itemManager.getItemComposition(itemId);
+        return composition == null || composition.isTradeable();
     }
 }

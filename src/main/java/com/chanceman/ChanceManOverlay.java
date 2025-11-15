@@ -2,6 +2,7 @@ package com.chanceman;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.ItemComposition;
 import net.runelite.client.audio.AudioPlayer;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.Overlay;
@@ -61,6 +62,12 @@ public class ChanceManOverlay extends Overlay implements RollOverlay {
     private static final int FRAME_CONTENT_INSET = 4;
     private static final Color SHADE_BOTTOM = new Color(0, 0, 0, 60);
     private static final Color SHADE_TOP = new Color(255, 255, 255, 25);
+    private static final Color TRADEABLE_GLOW_INNER = new Color(255, 255, 160, 150);
+    private static final Color TRADEABLE_GLOW_OUTER = new Color(255, 255, 160, 0);
+    private static final Color UNTRADEABLE_GLOW_INNER = new Color(140, 210, 255, 160);
+    private static final Color UNTRADEABLE_GLOW_OUTER = new Color(140, 210, 255, 0);
+    private static final Color[] TRADEABLE_GLOW = new Color[]{TRADEABLE_GLOW_INNER, TRADEABLE_GLOW_OUTER};
+    private static final Color[] UNTRADEABLE_GLOW = new Color[]{UNTRADEABLE_GLOW_INNER, UNTRADEABLE_GLOW_OUTER};
 
     private final Client client;
     private final ItemManager itemManager;
@@ -340,14 +347,17 @@ public class ChanceManOverlay extends Overlay implements RollOverlay {
                 final float cx = baseX + ICON_W / 2f;
                 final float cy = iconsY + ICON_H / 2f;
 
+                final int centerItemId = rollingItems.get(winnerIndex);
+                final Color[] glowPalette = getHighlightPalette(centerItemId);
+
                 // Radial glow
                 final RadialGradientPaint glow = new RadialGradientPaint(
                         new Point2D.Float(cx, cy),
                         glowW / 2f,
                         new float[]{0f, 1f},
                         new Color[]{
-                                new Color(255, 255, 160, 150),
-                                new Color(255, 255, 160, 0)
+                                glowPalette[0],
+                                glowPalette[1]
                         }
                 );
                 final Composite old = g.getComposite();
@@ -366,7 +376,6 @@ public class ChanceManOverlay extends Overlay implements RollOverlay {
                 final int scaledX = innerBoxX + (innerBoxW - scaledW) / 2;
                 final int scaledY = innerBoxY + (innerBoxH - scaledH) / 2;
 
-                final int centerItemId = rollingItems.get(winnerIndex);
                 final BufferedImage centerImg = itemManager.getImage(centerItemId, 1, false);
                 if (centerImg != null) {
                     g.drawImage(centerImg, scaledX, scaledY, scaledW, scaledH, null);
@@ -376,6 +385,18 @@ public class ChanceManOverlay extends Overlay implements RollOverlay {
 
         g.setClip(oldClip);
         return null;
+    }
+
+    private Color[] getHighlightPalette(int itemId) {
+        return isTradeableItem(itemId) ? TRADEABLE_GLOW : UNTRADEABLE_GLOW;
+    }
+
+    private boolean isTradeableItem(int itemId) {
+        if (itemId <= 0) {
+            return true;
+        }
+        ItemComposition composition = itemManager.getItemComposition(itemId);
+        return composition == null || composition.isTradeable();
     }
 
     /**

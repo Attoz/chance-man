@@ -51,4 +51,15 @@ public class ItemsFilter {
                 itemId == PoisonWeapons.WEAPON_POISON_.getBaseId() ||
                 itemId == PoisonWeapons.WEAPON_POISON__.getBaseId();
     }
+
+    /**
+     * Returns true if this item ID is on the allowlist of untradeables that can participate
+     * in rolling/unlocking when the Include Untradeable toggle is enabled.
+     *
+     * @param itemId canonical item id to check
+     * @return true if the item is allowlisted
+     */
+    public static boolean isUntradeableAllowlisted(int itemId) {
+        return UntradeableAllowlist.getALLOWED_UNTRADEABLE_ITEMS().contains(itemId);
+    }
 }

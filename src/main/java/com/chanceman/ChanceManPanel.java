@@ -257,7 +257,6 @@ public class ChanceManPanel extends PluginPanel
     {
         private final JLabel iconLabel = new JLabel();
         private final JLabel nameLabel = new JLabel();
-        private final int PREFERRED_WIDTH = 200; // Width for the cell
         private final int PREFERRED_HEIGHT = 32; // Height for each row
 
         public ItemCellRenderer()
@@ -267,9 +266,14 @@ public class ChanceManPanel extends PluginPanel
             add(iconLabel, BorderLayout.WEST);
             add(nameLabel, BorderLayout.CENTER);
             nameLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
-            // Let the cell be as wide as needed, but with a minimum width
-            setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
-            setMaximumSize(new Dimension(Short.MAX_VALUE, PREFERRED_HEIGHT));
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            Dimension preferred = super.getPreferredSize();
+            preferred.height = PREFERRED_HEIGHT;
+            return preferred;
         }
 
         @Override
@@ -309,6 +313,10 @@ public class ChanceManPanel extends PluginPanel
                 setBackground(new Color(60, 63, 65));
                 nameLabel.setForeground(defaultItemTextColor);
             }
+
+            // Let Swing compute width from the label's preferred size
+            nameLabel.setPreferredSize(null);
+            setPreferredSize(null);
 
             return this;
         }

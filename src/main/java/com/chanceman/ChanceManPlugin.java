@@ -7,6 +7,8 @@ import com.chanceman.drops.DropCache;
 import com.chanceman.filters.EnsouledHeadMapping;
 import com.chanceman.menus.ActionHandler;
 import com.chanceman.filters.ItemsFilter;
+import com.chanceman.filters.ItemAttributes;
+import com.chanceman.filters.ItemEligibility;
 import com.chanceman.ui.DropsTabUI;
 import com.chanceman.ui.DropsTooltipOverlay;
 import com.chanceman.ui.MusicWidgetController;
@@ -473,45 +475,16 @@ public class ChanceManPlugin extends Plugin
         {
             return false;
         }
-        String name = comp.getName();
-        if (name == null)
-        {
-            return false;
-        }
-        name = name.trim();
-        if (name.isEmpty()
-                || name.equalsIgnoreCase("null")
-                || name.equalsIgnoreCase("Members")
-                || name.equalsIgnoreCase("(Members)")
-                || name.matches("(?i)null\\s*\\(Members\\)"))
-        {
-            return false;
-        }
-        if (comp.getPlaceholderTemplateId() != -1)
-        {
-            return false;
-        }
-        if (!config.includeUntradeable() && !comp.isTradeable())
-        {
-            return false;
-        }
-        if (isNotTracked(itemId))
-        {
-            return false;
-        }
-        if (ItemsFilter.isBlocked(itemId, config))
-        {
-            return false;
-        }
-        if (config.freeToPlay() && comp.isMembers())
-        {
-            return false;
-        }
+        int canonicalItemId = itemManager.canonicalize(itemId);
         Set<Integer> unlocked = unlockedSnapshot != null ? unlockedSnapshot : unlockedItemsManager.getUnlockedItems();
-        return ItemsFilter.isPoisonEligible(
+        ItemAttributes attributes = ItemAttributes.from(comp);
+        return ItemEligibility.shouldInclude(
+                attributes,
                 itemId,
-                config.requireWeaponPoison(),
-                unlocked
+                canonicalItemId,
+                config,
+                unlocked,
+                this::isNotTracked
         );
     }
 

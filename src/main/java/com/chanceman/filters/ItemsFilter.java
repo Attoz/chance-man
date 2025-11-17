@@ -62,4 +62,15 @@ public class ItemsFilter {
     public static boolean isUntradeableAllowlisted(int itemId) {
         return UntradeableAllowlist.getALLOWED_UNTRADEABLE_ITEMS().contains(itemId);
     }
+
+    /**
+     * Returns true if this item ID is in the quest item allowlist. Quest items are only considered
+     * when the Include Quest Items toggle is enabled.
+     *
+     * @param itemId canonical item id to check
+     * @return true if the item is a quest item
+     */
+    public static boolean isQuestItem(int itemId) {
+        return QuestItemAllowlist.getALLOWED_QUEST_ITEMS().contains(itemId);
+    }
 }

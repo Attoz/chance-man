@@ -55,6 +55,10 @@ public final class ItemEligibility
                 return false;
             }
         }
+        if (ItemsFilter.isQuestItem(canonicalItemId) && !config.includeQuestItems())
+        {
+            return false;
+        }
         if (notTrackedPredicate != null && notTrackedPredicate.test(itemId))
         {
             return false;

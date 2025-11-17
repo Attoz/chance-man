@@ -147,7 +147,7 @@ public interface ChanceManConfig extends Config
     {
         return true;
     }
-    
+
     @ConfigItem(
     keyName = "includeUntradeable",
     name = "Include Untradeable Items",
@@ -168,6 +168,18 @@ default boolean includeUntradeable() {
     default int dimLockedItemsOpacity()
     {
         return 150;
+    }
+
+    @ConfigItem(
+            keyName = "includeQuestItems",
+            name = "Include Quest Items",
+            description = "Enable to include quest items in the rolling system",
+            position = 20,
+            hidden = true
+    )
+    default boolean includeQuestItems()
+    {
+        return false;
     }
 
       @ConfigItem(

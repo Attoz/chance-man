@@ -285,6 +285,7 @@ public class ChanceManPlugin extends Plugin
             case "enableItemSets":
             case "requireWeaponPoison":
             case "includeUntradeable":
+            case "includeQuestItems":
                 refreshTradeableItems();
                 break;
             case "showRareDropTable":

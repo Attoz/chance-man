@@ -1,5 +1,6 @@
 package com.chanceman;
 
+import com.chanceman.filters.QuestItemAllowlist;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
@@ -563,10 +564,10 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                 Integer hoveredItem = getOptionAt(mouse.getX(), mouse.getY());
                 if (hoveredItem != null)
                 {
-                    String hoverName = getItemNameSafe(hoveredItem);
-                    if (!hoverName.isEmpty())
+                    String hoverText = buildHoverText(hoveredItem);
+                    if (!hoverText.isEmpty())
                     {
-                        drawHoverTooltip(g, hoverName, mouse, oldClip);
+                        drawHoverTooltip(g, hoverText, mouse, oldClip);
                     }
                 }
             }
@@ -942,6 +943,21 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
             return "";
         }
         return name;
+    }
+
+    private String buildHoverText(int itemId)
+    {
+        String baseName = getItemNameSafe(itemId);
+        String questName = QuestItemAllowlist.getQuestNameForItem(itemId);
+        if (questName == null || questName.trim().isEmpty())
+        {
+            return baseName;
+        }
+        if (baseName.isEmpty())
+        {
+            return questName;
+        }
+        return baseName + " (" + questName + ")";
     }
 
     private void drawHighlight(Graphics2D g, int iconsX, int baseY, int itemId, int iconDimension, boolean emphasize)

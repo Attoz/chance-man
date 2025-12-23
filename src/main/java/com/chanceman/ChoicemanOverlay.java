@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.awt.event.MouseEvent;
 import java.util.function.Supplier;
 
 /**
@@ -179,22 +181,20 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
 
     public Integer getOptionAt(int x, int y)
     {
-        // Get the overlay's bounds
-        Rectangle bounds = getBounds();
-        if (bounds == null) {
-            return null;
-        }
-
-        // Convert to overlay-relative coordinates
-        int relativeX = x - bounds.x;
-        int relativeY = y - bounds.y;
-
         synchronized (columnHitboxes)
         {
             for (int i = 0; i < columnHitboxes.size(); i++)
             {
                 Rectangle rect = columnHitboxes.get(i);
-                if (rect.contains(relativeX, relativeY) && i < currentOptions.size())
+                RoundRectangle2D.Float buttonShape = new RoundRectangle2D.Float(
+                    rect.x,
+                    rect.y,
+                    rect.width,
+                    rect.height,
+                    CHOICE_BUTTON_CORNER_RADIUS,
+                    CHOICE_BUTTON_CORNER_RADIUS
+                );
+                if (buttonShape.contains(x, y) && i < currentOptions.size())
                 {
                     return currentOptions.get(i);
                 }
@@ -603,6 +603,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
                     }
                 }
             }
+            return new Dimension(totalWidth, slotHeight);
         }
         return null;
     }
@@ -655,17 +656,7 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
             Rectangle drawRect = new Rectangle(x, y, width, height);
             buttonRects.add(drawRect);
 
-            Rectangle bounds = getBounds();
-            if (bounds != null)
-            {
-                Rectangle hitbox = new Rectangle(drawRect);
-                hitbox.translate(-bounds.x, -bounds.y);
-                hitboxRects.add(hitbox);
-            }
-            else
-            {
-                hitboxRects.add(new Rectangle(drawRect));
-            }
+            hitboxRects.add(drawRect);
         }
 
         Point mouse = client.getMouseCanvasPosition();
@@ -674,7 +665,16 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
         {
             for (int i = 0; i < buttonRects.size(); i++)
             {
-                if (buttonRects.get(i).contains(new java.awt.Point(mouse.getX(), mouse.getY())))
+                Rectangle rect = buttonRects.get(i);
+                RoundRectangle2D.Float buttonShape = new RoundRectangle2D.Float(
+                    rect.x,
+                    rect.y,
+                    rect.width,
+                    rect.height,
+                    CHOICE_BUTTON_CORNER_RADIUS,
+                    CHOICE_BUTTON_CORNER_RADIUS
+                );
+                if (buttonShape.contains(new java.awt.Point(mouse.getX(), mouse.getY())))
                 {
                     hoveredIndex = i;
                     break;
@@ -1053,6 +1053,60 @@ public class ChoicemanOverlay extends Overlay implements RollOverlay
     private Color[] getHighlightPalette(int itemId)
     {
         return isTradeableItem(itemId) ? TRADEABLE_GLOW : UNTRADEABLE_GLOW;
+    }
+
+    private volatile CompletableFuture<Integer> selectionFuture;
+
+    public void setSelectionFuture(CompletableFuture<Integer> future)
+    {
+        this.selectionFuture = future;
+    }
+
+
+
+    private final java.awt.event.MouseListener mouseListener = new java.awt.event.MouseAdapter()
+    {
+        @Override
+        public void mouseClicked(MouseEvent e)
+        {
+            if (selectionPending && getOptionAt(e.getX(), e.getY()) != null)
+            {
+                e.consume();
+            }
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e)
+        {
+            if (selectionPending && getOptionAt(e.getX(), e.getY()) != null)
+            {
+                e.consume();
+            }
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e)
+        {
+            if (!selectionPending)
+            {
+                return;
+            }
+
+            Integer hit = getOptionAt(e.getX(), e.getY());
+            if (hit != null)
+            {
+                if (selectionFuture != null && !selectionFuture.isDone())
+                {
+                    selectionFuture.complete(hit);
+                }
+                e.consume();
+            }
+        }
+    };
+
+    public java.awt.event.MouseListener getMouseListener()
+    {
+        return mouseListener;
     }
 
     private boolean isTradeableItem(int itemId)

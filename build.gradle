@@ -3,7 +3,6 @@ plugins {
 }
 
 repositories {
-	mavenLocal()
 	maven {
 		url = 'https://repo.runelite.net'
 		content {
@@ -11,6 +10,8 @@ repositories {
 		}
 	}
 	mavenCentral()
+	// Keep mavenLocal last to avoid picking up incomplete or stale artifacts from a local cache.
+	mavenLocal()
 }
 
 def runeLiteVersion = 'latest.release'

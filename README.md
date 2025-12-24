@@ -1,4 +1,10 @@
-# ChanceMan
+# Choicer
+
+All credits goes to ChunkyAtlas for the ChanceMan plugin. This plugin is forked from his original work, purely due to personal interest in enhancing the experience. Please note this is a modified version of the original plugin. Even these added features were originally his ideas!!!
+
+Please check out his plugin at https://github.com/ChunkyAtlas/ChanceMan if you are interested in giving him a shoutout.
+
+I do not take credit for anything !
 
 ## Overview
 

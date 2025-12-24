@@ -14,6 +14,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.WidgetClosed;
 import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -44,6 +45,8 @@ public class ActionHandler {
 			MenuAction.GROUND_ITEM_FIFTH_OPTION
 	);
 
+	private static final int ORBS_GROUP = (InterfaceID.Orbs.UNIVERSE >>> 16);
+
 	/**
 	 * Normalize a MenuEntryAdded into the base item ID.
 	 */
@@ -61,8 +64,7 @@ public class ActionHandler {
 	}
 
 	private final HashSet<Integer> enabledUIs = new HashSet<>() {{
-		add(EnabledUI.BANK.getId());
-		add(EnabledUI.DEPOSIT_BOX.getId());
+		for (EnabledUI ui : EnabledUI.values()) add(ui.getId());
 	}};
 
 	@Inject
@@ -98,6 +100,11 @@ public class ActionHandler {
 		return enabledUIOpen != -1;
 	}
 
+	private EnabledUI currentEnabledUi()
+	{
+		return enabledUIOpen == -1 ? null : EnabledUI.fromGroupId(enabledUIOpen);
+	}
+
 	private boolean inactive() {
 		if (!unlockedItemsManager.ready()) return true;
 		return client.getGameState().getState() < GameState.LOADING.getState();
@@ -105,8 +112,7 @@ public class ActionHandler {
 
 	@Subscribe
 	public void onWidgetClosed(WidgetClosed event) {
-		if (enabledUIs.contains(event.getGroupId()))
-			enabledUIOpen = -1;
+		if (event.getGroupId() == enabledUIOpen) enabledUIOpen = -1;
 	}
 
 	@Subscribe
@@ -118,6 +124,12 @@ public class ActionHandler {
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event) {
 		if (inactive()) return;
+
+		EnabledUI ui = currentEnabledUi();
+		if (ui != null && !ui.isGreyLockedItems())
+		{
+			return;
+		}
 
 		MenuEntry entry = event.getMenuEntry();
 		MenuAction action = entry.getType();
@@ -171,13 +183,38 @@ public class ActionHandler {
 				&& !unlockedItemsManager.isUnlocked(itemId);
 	}
 
+	private boolean isHealthOrbCure(MenuEntry entry)
+	{
+		if (entry.getType() != MenuAction.CC_OP)
+			return false;
+
+		if (!"cure".equalsIgnoreCase(Text.removeTags(entry.getOption())))
+			return false;
+
+		int w1 = entry.getParam1();
+		int w0 = entry.getParam0();
+
+		return (w1 >>> 16) == ORBS_GROUP || (w0 >>> 16) == ORBS_GROUP;
+	}
+
 	/**
 	 * This method handles non-ground items (or any other cases) by checking if the item is enabled.
 	 * It returns true if the action should be allowed.
 	 */
 	private boolean isEnabled(int id, MenuEntry entry, MenuAction action) {
+		if (isHealthOrbCure(entry))
+		{
+			return true;
+		}
+
 		String option = Text.removeTags(entry.getOption());
 		String target = Text.removeTags(entry.getTarget());
+
+		EnabledUI ui = currentEnabledUi();
+		if (ui != null && ui.isAllowAllActions())
+		{
+			return true;
+		}
 
 		// Always allow "Drop"
 		if (option.equalsIgnoreCase("drop") || option.equalsIgnoreCase("check"))
@@ -194,13 +231,7 @@ public class ActionHandler {
 		if (Spell.isSpell(target))
 			return restrictions.isSpellOpEnabled(target);
 
-		boolean enabled;
-		if (enabledUiOpen()) {
-			enabled = option.startsWith("Deposit") || option.startsWith("Examine") || option.startsWith("Withdraw")
-					|| option.startsWith("Release") || option.startsWith("Destroy");
-		} else {
-			enabled = !disabledActions.contains(action);
-		}
+		boolean enabled = !disabledActions.contains(action);
 		if (enabled)
 			return true;
 		if (id == 0 || id == -1 || !plugin.isInPlay(id))

@@ -2,6 +2,7 @@ package com.choicer.chanceman.ui;
 
 import com.choicer.chanceman.ChanceManPlugin;
 import com.choicer.chanceman.filters.EnsouledHeadMapping;
+import com.choicer.chanceman.menus.EnabledUI;
 import com.choicer.chanceman.managers.UnlockedItemsManager;
 import lombok.Setter;
 import net.runelite.api.Client;
@@ -83,6 +84,19 @@ public class ItemDimmerController {
 
     private void walkAndDim(Widget w) {
         if (w == null || w.isHidden()) return;
+
+        // Don't dim item icons in EnabledUIs configured to not grey locked items
+        int groupId = w.getId() >>> 16;
+        EnabledUI ui = EnabledUI.fromGroupId(groupId);
+        if (ui != null && !ui.isGreyLockedItems()) {
+            Widget[] dyn = w.getDynamicChildren();
+            if (dyn != null) for (Widget c : dyn) walkAndDim(c);
+            Widget[] stat = w.getStaticChildren();
+            if (stat != null) for (Widget c : stat) walkAndDim(c);
+            Widget[] nest = w.getNestedChildren();
+            if (nest != null) for (Widget c : nest) walkAndDim(c);
+            return;
+        }
 
         if (isCollectionLogWidget(w)) return;
         final int itemId = w.getItemId();
